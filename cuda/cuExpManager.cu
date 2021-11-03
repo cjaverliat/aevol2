@@ -159,7 +159,7 @@ void cuExpManager::run_evolution(int nb_gen) {
     CHECK_KERNEL
 
     printf("Running evolution GPU from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
-    for (int gen = 00;0000000000000000000000000000000000000 gen < nb_gen; gen++) {
+    for (int gen = 0; gen < nb_gen; gen++) {
         AeTime::plusplus();
         printf("Generation %d : \n",AeTime::time());
 

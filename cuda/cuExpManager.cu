@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cmath>
 #include <zlib.h>
+#include <time.h>
 
 #include "AeTime.h"
 
@@ -133,6 +134,7 @@ void cuExpManager::evaluate_population() {
 }
 
 void cuExpManager::run_evolution(int nb_gen) {
+    high_resolution_clock::time_point t0 = high_resolution_clock::now();
     const int MB_SIZE = 8;
     // Set a heap size of MB_SIZE megabytes.
     // cf: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#heap-memory-allocation
@@ -157,7 +159,7 @@ void cuExpManager::run_evolution(int nb_gen) {
     CHECK_KERNEL
 
     printf("Running evolution GPU from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
-    for (int gen = 0; gen < nb_gen; gen++) {
+    for (int gen = 00;0000000000000000000000000000000000000 gen < nb_gen; gen++) {
         AeTime::plusplus();
         printf("Generation %d : \n",AeTime::time());
 
@@ -171,6 +173,9 @@ void cuExpManager::run_evolution(int nb_gen) {
 
     check_result<<<1,1>>>(nb_indivs_, device_individuals_);
     CHECK_KERNEL
+    high_resolution_clock::time_point t3 = high_resolution_clock::now();
+    auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>( t3 - t0 ).count();
+    cout << "runevolution time elapsed: " << time_elapsed << " ms" << endl;
 }
 
 void cuExpManager::save(int t) const {

@@ -36,6 +36,10 @@ checkCuda(cudaGetLastError());
 #define CHECK_KERNEL
 #endif
 
+#define TIME_KERNEL_TO_CSV(Name) \
+timingfile << Name << "," << time_elapsed << std::endl; \
+timingfile.flush();
+
 cuExpManager::cuExpManager(const ExpManager* cpu_exp) {
     grid_height_ = cpu_exp->grid_height_;
     grid_width_ = cpu_exp->grid_height_;
@@ -45,6 +49,12 @@ cuExpManager::cuExpManager(const ExpManager* cpu_exp) {
     backup_step_ = cpu_exp->backup_step_;
 
     nb_indivs_ = grid_height_ * grid_width_;
+
+    //Timing
+    timingfile.open("stats/stats_simd_best.csv", std::ofstream::trunc);
+    timingfile << "Function" << "," << "time_elapsed" << std::endl;
+    timingfile.flush();
+
 
     genome_length_ = cpu_exp->internal_organisms_[0]->length();
     host_individuals_ = new char *[nb_indivs_];
@@ -67,6 +77,10 @@ cuExpManager::cuExpManager(const ExpManager* cpu_exp) {
 
 cuExpManager::~cuExpManager() {
     device_data_destructor();
+    //Timing
+    timingfile.flush();
+    timingfile.close();
+
     delete[] counters_;
     delete[] target_;
     delete[] host_individuals_;
@@ -113,7 +127,16 @@ void cuExpManager::evaluate_population() {
     dim3 my_gridDim(nb_indivs_);
     dim3 one_indiv_by_thread_grid(ceil((float)nb_indivs_ / (float)my_blockDim.x));
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
     clean_metadata<<<one_indiv_by_thread_grid, my_blockDim>>>(nb_indivs_, device_individuals_);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float time_elapsed = 0;
+    cudaEventElapsedTime(&time_elapsed, start, stop);
+    TIME_KERNEL_TO_CSV("clean_metadata")
     CHECK_KERNEL;
     search_patterns<<<my_gridDim, my_blockDim>>>(nb_indivs_, device_individuals_);
     CHECK_KERNEL;
@@ -131,6 +154,7 @@ void cuExpManager::evaluate_population() {
     CHECK_KERNEL;
     compute_fitness<<<my_gridDim, my_blockDim>>>(nb_indivs_, device_individuals_, device_target_);
     CHECK_KERNEL;
+
 }
 
 void cuExpManager::run_evolution(int nb_gen) {
@@ -580,4 +604,3 @@ void init_device_population(int nb_indivs, int genome_length, cuIndividual* all_
         }
     }
 }
-

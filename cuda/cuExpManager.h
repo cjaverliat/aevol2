@@ -60,6 +60,7 @@ private:
     double* device_target_;
 
     RandService* rand_service_;
+
+    //Timing
+    std::ofstream timingfile;
 };
-
-

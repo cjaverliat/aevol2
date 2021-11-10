@@ -6,6 +6,7 @@
 #include "misc_functions.cuh"
 
 #include <cstdio>
+#include <cassert>
 
 __device__ void cuIndividual::search_patterns() {
     // One block per individual

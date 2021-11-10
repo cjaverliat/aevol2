@@ -1,0 +1,21 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reticulate)
+```
+
+```{python}
+with open("build/simulation_example_7/stats/timing.csv") as fin:
+  headerline = fin.next()
+  valuesDict = {}
+  for r in csv.reader(fin):
+    valuesDict[string(r[1])] = float(r[1])
+```
+
+## Including Plots
+
+```{r}
+ggplot(py$valuesDict)
+geom_bar(stat = "identity")
+```
+

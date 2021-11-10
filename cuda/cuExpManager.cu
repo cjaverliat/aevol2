@@ -36,7 +36,11 @@ checkCuda(cudaGetLastError());
 #define CHECK_KERNEL
 #endif
 
+#define START_TIME_KERNEL cudaEventRecord(start);
 #define TIME_KERNEL_TO_CSV(Name) \
+cudaEventRecord(stop); \
+cudaEventSynchronize(stop); \
+cudaEventElapsedTime(&time_elapsed, start, stop); \
 timingfile << Name << "," << time_elapsed << std::endl; \
 timingfile.flush();
 
@@ -51,7 +55,7 @@ cuExpManager::cuExpManager(const ExpManager* cpu_exp) {
     nb_indivs_ = grid_height_ * grid_width_;
 
     //Timing
-    timingfile.open("stats/stats_simd_best.csv", std::ofstream::trunc);
+    timingfile.open("stats/timing.csv", std::ofstream::trunc);
     timingfile << "Function" << "," << "time_elapsed" << std::endl;
     timingfile.flush();
 
@@ -128,17 +132,16 @@ void cuExpManager::evaluate_population() {
     dim3 one_indiv_by_thread_grid(ceil((float)nb_indivs_ / (float)my_blockDim.x));
 
     cudaEvent_t start, stop;
+    float time_elapsed = 0;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    cudaEventRecord(start);
+    START_TIME_KERNEL;
     clean_metadata<<<one_indiv_by_thread_grid, my_blockDim>>>(nb_indivs_, device_individuals_);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float time_elapsed = 0;
-    cudaEventElapsedTime(&time_elapsed, start, stop);
-    TIME_KERNEL_TO_CSV("clean_metadata")
+    TIME_KERNEL_TO_CSV("clean_metadata");
     CHECK_KERNEL;
+    START_TIME_KERNEL;
     search_patterns<<<my_gridDim, my_blockDim>>>(nb_indivs_, device_individuals_);
+    TIME_KERNEL_TO_CSV("search_patterns");
     CHECK_KERNEL;
     sparse_meta<<<my_gridDim, my_blockDim>>>(nb_indivs_, device_individuals_);
     CHECK_KERNEL;
@@ -198,8 +201,8 @@ void cuExpManager::run_evolution(int nb_gen) {
     check_result<<<1,1>>>(nb_indivs_, device_individuals_);
     CHECK_KERNEL
     high_resolution_clock::time_point t3 = high_resolution_clock::now();
-    auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>( t3 - t0 ).count();
-    cout << "runevolution time elapsed: " << time_elapsed << " ms" << endl;
+    auto time_elapsed_runevo = std::chrono::duration_cast<std::chrono::milliseconds>( t3 - t0 ).count();
+    cout << "runevolution time elapsed: " << time_elapsed_runevo << " ms" << endl;
 }
 
 void cuExpManager::save(int t) const {

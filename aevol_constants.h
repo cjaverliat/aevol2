@@ -5,13 +5,17 @@
 #pragma once
 
 #include <cstdint>
+#include <bitset>
 
 constexpr int8_t NB_BASE = 2;
 constexpr int8_t CODON_SIZE = 3;
 // promoter
 constexpr int8_t PROM_MAX_DIFF = 4;
 constexpr int8_t PROM_SIZE = 22;
-constexpr const char *PROM_SEQ = "0101011001110010010110";
+
+const std::string PROM_SEQ_STR = "0101011001110010010110";
+const std::bitset<PROM_SIZE> PROM_SEQ(PROM_SEQ_STR);
+
 // terminator
 constexpr int8_t TERM_STEM_SIZE = 4;
 constexpr int8_t TERM_LOOP_SIZE = 3;

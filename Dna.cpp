@@ -5,11 +5,12 @@
 #include "Dna.h"
 
 #include <cassert>
+#include <iostream>
 
-Dna::Dna(int length, Threefry::Gen &&rng) : seq_(length) {
+Dna::Dna(int length, Threefry::Gen &&rng) {
     // Generate a random genome
     for (int32_t i = 0; i < length; i++) {
-        seq_[i] = '0' + rng.random(NB_BASE);
+        seq_[length - 1 - i] = rng.random(NB_BASE);
     }
 }
 
@@ -19,8 +20,9 @@ int Dna::length() const {
 
 void Dna::save(gzFile backup_file) {
     int dna_length = length();
+    std::string seq_str = seq_.to_string();
     gzwrite(backup_file, &dna_length, sizeof(dna_length));
-    gzwrite(backup_file, seq_.data(), dna_length * sizeof(seq_[0]));
+    gzwrite(backup_file, seq_str.data(), dna_length * sizeof(char));
 }
 
 void Dna::load(gzFile backup_file) {
@@ -28,98 +30,16 @@ void Dna::load(gzFile backup_file) {
     gzread(backup_file, &dna_length, sizeof(dna_length));
 
     char tmp_seq[dna_length];
-    gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
-
-    seq_ = std::vector<char>(tmp_seq, tmp_seq + dna_length);
+    gzread(backup_file, tmp_seq, dna_length * sizeof(char));
+    seq_ = std::bitset<GENOME_SIZE>(tmp_seq);
 }
 
-void Dna::set(int pos, char c) {
-    seq_[pos] = c;
-}
-
-/**
- * Remove the DNA inbetween pos_1 and pos_2
- *
- * @param pos_1
- * @param pos_2
- */
-void Dna::remove(int pos_1, int pos_2) {
-    assert(pos_1 >= 0 && pos_2 >= pos_1 && pos_2 <= seq_.size());
-    seq_.erase(seq_.begin() + pos_1, seq_.begin() + pos_2);
-}
-
-/**
- * Insert a sequence of a given length at a given position into the DNA of the Organism
- *
- * @param pos : where to insert the sequence
- * @param seq : the sequence itself
- * @param seq_length : the size of the sequence
- */
-void Dna::insert(int pos, std::vector<char> seq) {
-// Insert sequence 'seq' at position 'pos'
-    assert(pos >= 0 && pos < seq_.size());
-
-    seq_.insert(seq_.begin() + pos, seq.begin(), seq.end());
-}
-
-/**
- * Insert a sequence of a given length at a given position into the DNA of the Organism
- *
- * @param pos : where to insert the sequence
- * @param seq : the sequence itself
- * @param seq_length : the size of the sequence
- */
-void Dna::insert(int pos, Dna *seq) {
-// Insert sequence 'seq' at position 'pos'
-    assert(pos >= 0 && pos < seq_.size());
-
-    seq_.insert(seq_.begin() + pos, seq->seq_.begin(), seq->seq_.end());
+void Dna::set(int pos, bool val) {
+    seq_[length() - 1 - pos] = val;
 }
 
 void Dna::do_switch(int pos) {
-    if (seq_[pos] == '0') seq_[pos] = '1';
-    else seq_[pos] = '0';
-}
-
-void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
-    // Duplicate segment [pos_1; pos_2[ and insert the duplicate before pos_3
-    char *duplicate_segment = NULL;
-
-    int32_t seg_length;
-
-    if (pos_1 < pos_2) {
-        //
-        //       pos_1         pos_2                   -> 0-
-        //         |             |                   -       -
-        // 0--------------------------------->      -         -
-        //         ===============                  -         - pos_1
-        //           tmp (copy)                      -       -
-        //                                             -----      |
-        //                                             pos_2    <-'
-        //
-        std::vector<char> seq_dupl =
-                std::vector<char>(seq_.begin() + pos_1, seq_.begin() + pos_2);
-
-        insert(pos_3, seq_dupl);
-    } else { // if (pos_1 >= pos_2)
-        // The segment to duplicate includes the origin of replication.
-        // The copying process will be done in two steps.
-        //
-        //                                            ,->
-        //    pos_2                 pos_1            |      -> 0-
-        //      |                     |                   -       - pos_2
-        // 0--------------------------------->     pos_1 -         -
-        // ======                     =======            -         -
-        //  tmp2                        tmp1              -       -
-        //                                                  -----
-        //
-        //
-        std::vector<char>
-                seq_dupl = std::vector<char>(seq_.begin() + pos_1, seq_.end());
-        seq_dupl.insert(seq_dupl.end(), seq_.begin(), seq_.begin() + pos_2);
-
-        insert(pos_3, seq_dupl);
-    }
+    seq_.flip(length() - 1 - pos);
 }
 
 int Dna::promoter_at(int pos) {
@@ -131,7 +51,7 @@ int Dna::promoter_at(int pos) {
             search_pos -= seq_.size();
         // Searching for the promoter
         prom_dist[motif_id] =
-                PROM_SEQ[motif_id] == seq_[search_pos] ? 0 : 1;
+                PROM_SEQ[PROM_SIZE - 1 - motif_id] ^ seq_[length() - 1 - search_pos];
 
     }
 
@@ -178,7 +98,7 @@ int Dna::terminator_at(int pos) {
         if (left >= length()) left -= length();
 
         // Search for the terminators
-        term_dist[motif_id] = seq_[right] != seq_[left] ? 1 : 0;
+        term_dist[motif_id] = seq_[length() - 1 - right] ^ seq_[length() - 1 - left];
     }
     int dist_term_lead = term_dist[0] +
                          term_dist[1] +
@@ -198,7 +118,10 @@ bool Dna::shine_dal_start(int pos) {
         if (t_pos >= seq_.size())
             t_pos -= seq_.size();
 
-        if (seq_[t_pos] == SHINE_DAL_SEQ[k_t]) {
+        if(SHINE_DAL_SEQ[k_t] == '*') {
+            start = false;
+            break;
+        } else if (seq_[length() - 1 - t_pos] == (SHINE_DAL_SEQ[k_t] - '0')) {
             start = true;
         } else {
             start = false;
@@ -218,7 +141,7 @@ bool Dna::protein_stop(int pos) {
         if (t_k >= seq_.size())
             t_k -= seq_.size();
 
-        if (seq_[t_k] == PROTEIN_END[k]) {
+        if (seq_[length() - 1 - t_k] == (PROTEIN_END[k] - '0')) {
             is_protein = true;
         } else {
             is_protein = false;
@@ -238,7 +161,7 @@ int Dna::codon_at(int pos) {
         t_pos = pos + i;
         if (t_pos >= seq_.size())
             t_pos -= seq_.size();
-        if (seq_[t_pos] == '1')
+        if (seq_[length() - 1 - t_pos] == 1)
             value += 1 << (CODON_SIZE - i - 1);
     }
 

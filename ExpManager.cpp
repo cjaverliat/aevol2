@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <zlib.h>
+#include <chrono>
 
 using namespace std;
 
@@ -357,6 +358,8 @@ void ExpManager::prepare_mutation(int indiv_id) const {
     }
 }
 
+static long accumTime = 0;
+
 /**
  * Execute a generation of the simulation for all the Organisms
  *
@@ -364,6 +367,15 @@ void ExpManager::prepare_mutation(int indiv_id) const {
 void ExpManager::run_a_step() {
 
     // Running the simulation process for each organism
+    
+    clock_t start, end;
+
+    start = clock();
+
+    /**
+     * Parallel mutation computation for each individual
+     */
+    #pragma omp parallel for schedule(dynamic)
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
         prepare_mutation(indiv_id);
@@ -375,13 +387,20 @@ void ExpManager::run_a_step() {
         }
     }
 
+    end = clock();
+
+    accumTime += end - start;
+
     // Swap Population
+
+    // TODO: just swap the pointers
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
     }
 
     // Search for the best
+    // Parallelisable avec des chunks de taille log(n) + vectorisable
     double best_fitness = prev_internal_organisms_[0]->fitness;
     int idx_best = 0;
     for (int indiv_id = 1; indiv_id < nb_indivs_; indiv_id++) {
@@ -391,6 +410,7 @@ void ExpManager::run_a_step() {
         }
     }
     best_indiv = prev_internal_organisms_[idx_best];
+    
 
     // Stats
     stats_best->reinit(AeTime::time());
@@ -447,5 +467,8 @@ void ExpManager::run_evolution(int nb_gen) {
             cout << "Backup for generation " << AeTime::time() << " done !" << endl;
         }
     }
+
+    cout << "Average individual loop update duration is " << ((float) accumTime / CLOCKS_PER_SEC) / nb_gen << "s" << endl;
+
     STOP_TRACER
 }

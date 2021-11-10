@@ -7,6 +7,13 @@ set(DO_TRACES OFF CACHE BOOL "Whether to enable the Traces library")
 set(USE_OMP OFF CACHE BOOL "Whether to enable OpenMP parallelization")
 set(USE_CUDA OFF CACHE BOOL "Whether to enable CUDA parallelization")
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O2 -march=native -fopenmp -fopt-info-vec-all")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -march=native")
+
 if ( DO_TRACES )
     add_definitions(-DTRACES)
     message( STATUS "Traces are activated" )

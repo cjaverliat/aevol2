@@ -392,12 +392,7 @@ void ExpManager::run_a_step() {
     accumTime += end - start;
 
     // Swap Population
-
-    // TODO: just swap the pointers
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
-        internal_organisms_[indiv_id] = nullptr;
-    }
+    swap(prev_internal_organisms_, internal_organisms_);
 
     // Search for the best
     // Parallelisable avec des chunks de taille log(n) + vectorisable

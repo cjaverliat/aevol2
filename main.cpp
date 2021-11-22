@@ -29,6 +29,7 @@
 #include <iostream>
 #include <getopt.h>
 #include <cstring>
+#include "Globals.h"
 
 #ifdef USE_CUDA
 #include "cuda/cuExpManager.h"
@@ -67,7 +68,6 @@ void print_help(char* prog_path) {
     printf("  -w, --width WIDTH_SIZE\tWidth of the population grid is WIDTH_SIZE\n");
     printf("  -h, --height HEIGHT_SIZE\tHeight of the population grid is HEIGHT_SIZE\n");
     printf("  -m, --mutation_rate MUTATION_RATE\tMutation rate is set to MUTATION_RATE\n");
-    printf("  -g, --genome_size GENOME_SIZE\tGenome at the initial genome is GENOME_SIZE bps\n");
     printf("  -b, --backup_step BACKUP_STEP\tDo a simulation backup/checkpoint every BACKUP_STEP\n");
     printf("  -r, --resume RESUME_STEP\tResume the simulation from the RESUME_STEP generations\n");
     printf("  -s, --seed SEED\tChange the seed for the pseudo random generator\n");
@@ -79,7 +79,6 @@ int main(int argc, char* argv[]) {
     int width = -1;
     int height = -1;
     double mutation_rate = -1;
-    int genome_size = -1;
     int resume = -1;
     int backup_step = -1;
     int seed = -1;
@@ -96,8 +95,6 @@ int main(int argc, char* argv[]) {
             { "height", required_argument,  NULL, 'h' },
             // Mutation rate
             { "mutation_rate", required_argument,  NULL, 'm' },
-            // Size of the initial genome
-            { "genome_size", required_argument,  NULL, 'g' },
             // Resuming from generation X
             { "resume", required_argument,  NULL, 'r' },
             // Backup step
@@ -132,10 +129,6 @@ int main(int argc, char* argv[]) {
                 mutation_rate = atof(optarg);
                 break;
             }
-            case 'g' : {
-                genome_size = atoi(optarg);
-                break;
-            }
             case 'r' : {
                 resume = atoi(optarg);
                 break;
@@ -167,7 +160,7 @@ int main(int argc, char* argv[]) {
     printf("Start ExpManager\n");
 
     if (resume >= 0) {
-        if ((width != -1) || (height != -1)|| (mutation_rate != -1.0) || (genome_size != -1) ||
+        if ((width != -1) || (height != -1)|| (mutation_rate != -1.0) ||
             (backup_step != -1) || (seed != -1)) {
             printf("Parameter(s) can not change during the simulation (i.e. when resuming a simulation, parameter(s) can not change)\n");
             exit(EXIT_FAILURE);
@@ -178,14 +171,13 @@ int main(int argc, char* argv[]) {
         if (width == -1) width = 32;
         if (height == -1) height = 32;
         if (mutation_rate == -1) mutation_rate = 0.00001;
-        if (genome_size == -1) genome_size = 5000;
         if (backup_step == -1) backup_step = 1000;
         if (seed == -1) seed = 566545665;
     }
 
     Abstract_ExpManager *exp_manager;
     if (resume == -1) {
-        exp_manager = new ExpManager(height, width, seed, mutation_rate, genome_size, backup_step);
+        exp_manager = new ExpManager(height, width, seed, mutation_rate, GENOME_SIZE, backup_step);
     } else {
         printf("Resuming...\n");
         exp_manager = new ExpManager(resume);

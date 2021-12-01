@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include "Globals.h"
-
 #include <vector>
 #include <zlib.h>
 #include <bitset>
+#include <cstdint>
 
 #include "Threefry.h"
 #include "aevol_constants.h"
 
-class Dna {
+class Dna
+{
 
 public:
     Dna() = default;
@@ -23,6 +23,8 @@ public:
     Dna(int length, Threefry::Gen &&rng);
 
     ~Dna() = default;
+
+    void print() const;
 
     int length() const;
 
@@ -44,5 +46,8 @@ public:
 
     int codon_at(int pos);
 
-    std::bitset<GENOME_SIZE> seq_;
+private:
+    size_t length_;
+    size_t n_bytes_;
+    std::vector<uint8_t> seq_;
 };

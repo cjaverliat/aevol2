@@ -26,8 +26,6 @@ public:
 
     void print() const;
 
-    int length() const;
-
     void save(gzFile backup_file);
 
     void load(gzFile backup_file);
@@ -46,8 +44,8 @@ public:
 
     int codon_at(int pos);
 
-private:
     size_t length_;
-    size_t n_bytes_;
+private:
     std::vector<uint8_t> seq_;
+    size_t n_bytes_;
 };

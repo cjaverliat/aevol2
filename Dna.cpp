@@ -10,12 +10,9 @@
 #include <algorithm>
 #include <cstring>
 
-Dna::Dna(int dna_length, Threefry::Gen &&rng)
+Dna::Dna(int dna_length, Threefry::Gen &&rng) : n_bytes_(ceil((dna_length + PROM_SIZE) / 8.0)), length_(dna_length)
 {
-    n_bytes_ = ceil((dna_length + PROM_SIZE) / 8.0); // number of words bytes to store the full DNA + mirrored beginning
     seq_ = std::vector<uint8_t>(n_bytes_);
-
-    length_ = dna_length;
 
     // Generate a random genome
     size_t byte_idx;
@@ -61,26 +58,27 @@ void Dna::print() const
     std::cout << std::endl;
 }
 
-int Dna::length() const
-{
-    return length_;
-}
-
 void Dna::save(gzFile backup_file)
 {
     size_t n_bytes = n_bytes_;
+    size_t length = length_;
     gzwrite(backup_file, &n_bytes, sizeof(n_bytes));
+    gzwrite(backup_file, &length, sizeof(length_));
     gzwrite(backup_file, seq_.data(), n_bytes * sizeof(seq_[0]));
 }
 
 void Dna::load(gzFile backup_file)
 {
     size_t n_bytes;
+    size_t length;
     gzread(backup_file, &n_bytes, sizeof(n_bytes));
+    gzread(backup_file, &length, sizeof(length));
 
     uint8_t tmp_seq[n_bytes];
     gzread(backup_file, tmp_seq, n_bytes * sizeof(tmp_seq[0]));
 
+    length_ = length;
+    n_bytes_ = n_bytes;
     seq_ = std::vector<uint8_t>(tmp_seq, tmp_seq + n_bytes);
 }
 

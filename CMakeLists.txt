@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O2 -march=native -fopenmp -fopt-info-vec-all")
+set(CMAKE_CXX_FLAGS_DEBUG "-pg -O2 -march=native -fopenmp -fopt-info-vec-all")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -march=native")
 
 if ( DO_TRACES )

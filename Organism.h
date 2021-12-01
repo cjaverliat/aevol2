@@ -57,8 +57,6 @@ public:
 
     void load(gzFile backup_file);
 
-    int length() const { return dna_->length(); };
-
     void apply_mutations(const std::list<MutationEvent *> &mutation_list);
 
     void reset_mutation_stats();
@@ -161,8 +159,8 @@ private:
     }
 
     int loop_back(int &position) const {
-        if (position >= length())
-            position -= length();
+        if (position >= dna_->length_)
+            position -= dna_->length_;
         return position;
     }
 };

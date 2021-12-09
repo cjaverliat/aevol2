@@ -396,7 +396,7 @@ void ExpManager::run_a_step()
 /**
      * Parallel mutation computation for each individual
      */
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(static)
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++)
     {
         selection(indiv_id);
